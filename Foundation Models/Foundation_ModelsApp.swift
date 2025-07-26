@@ -5,19 +5,25 @@
 //  Created by bimo.ez on 7/26/25.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 @main
 struct Foundation_ModelsApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Item.self
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let modelConfiguration = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: false
+        )
 
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try ModelContainer(
+                for: schema,
+                configurations: [modelConfiguration]
+            )
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
@@ -25,7 +31,17 @@ struct Foundation_ModelsApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AppConfigurator.configureWeatherView()
+            TabView {
+                AppConfigurator.configureParkingView()
+                    .tabItem {
+                        Label("주차장", systemImage: "car.fill")
+                    }
+                
+                AppConfigurator.configureWeatherView()
+                    .tabItem {
+                        Label("날씨", systemImage: "cloud.sun.fill")
+                    }
+            }
         }
         .modelContainer(sharedModelContainer)
     }

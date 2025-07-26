@@ -7,109 +7,102 @@
 
 import Foundation
 import CoreLocation
-import Combine
+import Observation
 
-class WeatherViewModel: ObservableObject {
-    @Published var myLocationWeather: WeatherInfo?
-    @Published var majorCityWeathers: [WeatherInfo] = []
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
+@Observable
+class WeatherViewModel {
+    var myLocationWeather: WeatherInfo?
+    var majorCityWeathers: [WeatherInfo] = []
+    var isLoading = false
+    var errorMessage: String?
 
     private let fetchWeatherUseCase: FetchWeatherUseCase
     private let locationService: LocationService
-    private var cancellables = Set<AnyCancellable>()
-
-    // 주요 대도시 리스트
-    private let predefinedCities: [LocationInfo] = [
-        LocationInfo(name: "서울", latitude: 37.5665, longitude: 126.9780),
-        LocationInfo(name: "도쿄", latitude: 35.6895, longitude: 139.6917),
-        LocationInfo(name: "뉴욕", latitude: 40.7128, longitude: -74.0060),
-        LocationInfo(name: "런던", latitude: 51.5072, longitude: -0.1276),
-        LocationInfo(name: "파리", latitude: 48.8566, longitude: 2.3522),
-        LocationInfo(name: "베이징", latitude: 39.9042, longitude: 116.4074),
-        LocationInfo(name: "시드니", latitude: -33.8688, longitude: 151.2093)
-    ]
 
     init(fetchWeatherUseCase: FetchWeatherUseCase, locationService: LocationService) {
         self.fetchWeatherUseCase = fetchWeatherUseCase
         self.locationService = locationService
 
-        // 주요 도시 WeatherInfo 초기화
         self.majorCityWeathers = predefinedCities.map {
             WeatherInfo(location: $0, errorMessage: "로딩 중...")
         }
-
-        setupLocationObservers()
     }
-
-    private func setupLocationObservers() {
-        locationService.authorizationStatusPublisher
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] status in
-                guard let self = self else { return }
-                switch status {
-                case .authorizedWhenInUse, .authorizedAlways:
-                    print("위치 권한 승인됨. 위치 요청 시작.")
-                    self.locationService.requestLocation()
-                case .denied, .restricted:
-                    print("위치 권한 거부 또는 제한됨.")
-                    self.errorMessage = WeatherError.locationAccessDenied.localizedDescription
-                    self.isLoading = false
-                    self.myLocationWeather = WeatherInfo(
-                        location: LocationInfo(name: "내 위치", latitude: 0, longitude: 0, isMyLocation: true),
-                        errorMessage: self.errorMessage
-                    )
-                case .notDetermined:
-                    print("위치 권한 아직 결정되지 않음.")
-                    // 사용자에게 다시 요청할 수 있음
-                @unknown default:
-                    break
-                }
-            }
-            .store(in: &cancellables)
-
-        locationService.locationPublisher
-            .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { [weak self] completion in
-                guard let self = self else { return }
-                if case let .failure(error) = completion {
-                    self.errorMessage = error.localizedDescription
-                    self.isLoading = false
-                    self.myLocationWeather = WeatherInfo(
-                        location: LocationInfo(name: "내 위치", latitude: 0, longitude: 0, isMyLocation: true),
-                        errorMessage: self.errorMessage
-                    )
-                }
-            }, receiveValue: { [weak self] location in
-                guard let self = self else { return }
-                let myLocationInfo = LocationInfo(name: "내 위치", latitude: location.coordinate.latitude, longitude: location.coordinate.longitude, isMyLocation: true)
-                Task {
-                    await self.fetchWeather(for: location, locationInfo: myLocationInfo)
-                }
-            })
-            .store(in: &cancellables)
-    }
-
-    func requestLocationPermission() {
-        locationService.requestAuthorization()
-    }
-
-    func loadAllWeatherData() {
+    
+    func fetchWeatherForAllLocations() {
         isLoading = true
         errorMessage = nil
 
-        // 내 위치 날씨 로드 트리거 (위치 권한에 따라 처리됨)
-        // setupLocationObservers에서 authorizationStatusPublisher를 구독하여 처리
-        locationService.requestAuthorization()
+        Task { @MainActor in
+            do {
+                let authStatus = try await locationService.requestAuthorizationStatus()
+                switch authStatus {
+                case .authorizedWhenInUse, .authorizedAlways:
+                    print("위치 권한 승인됨. 내 위치 날씨 요청 시작.")
+                    do {
+                        let location = try await locationService.requestCurrentLocation()
+                        let myLocationInfo = LocationInfo(name: "내 위치", latitude: location.coordinate.latitude, longitude: location.coordinate.longitude, isMyLocation: true)
+                        self.myLocationWeather = try await fetchWeatherUseCase.execute(for: location, locationInfo: myLocationInfo)
+                    } catch {
+                        // 내 위치 가져오기 실패 시 처리
+                        // 이 시점에서는 실제 위치 정보가 없으므로, 기본 LocationInfo를 생성하여 전달합니다.
+                        let defaultMyLocationInfo = LocationInfo(name: "내 위치", latitude: 37.6186, longitude: 126.9189, isMyLocation: true)
 
-        // 주요 도시 날씨 로드
-        Task {
-            await fetchMajorCitiesWeather()
-            await MainActor.run {
-                // 내 위치와 주요 도시 로딩이 모두 완료되었는지 확인 후 isLoading 해제
-                if myLocationWeather != nil && majorCityWeathers.allSatisfy({ $0.current != nil || $0.errorMessage != nil }) {
-                    isLoading = false
+                        self.myLocationWeather = WeatherInfo(
+                            location: defaultMyLocationInfo,
+                            current: nil,
+                            hourlyForecast: nil,
+                            dailyForecast: nil,
+                            errorMessage: error.localizedDescription
+                        )
+                        
+                        self.errorMessage = error.localizedDescription
+                    }
+                case .denied, .restricted:
+                    print("위치 권한 거부 또는 제한됨.")
+                    let defaultMyLocationInfo = LocationInfo(name: "내 위치", latitude: 37.6186, longitude: 126.9189, isMyLocation: true)
+                    self.myLocationWeather = WeatherInfo(
+                        location: defaultMyLocationInfo,
+                        current: nil,
+                        hourlyForecast: nil,
+                        dailyForecast: nil,
+                        errorMessage: WeatherError.locationAccessDenied.localizedDescription
+                    )
+                    self.errorMessage = WeatherError.locationAccessDenied.localizedDescription
+                case .notDetermined:
+                    print("위치 권한 아직 결정되지 않음. 사용자에게 요청 필요.")
+                    self.errorMessage = "위치 권한이 필요합니다. 앱 설정에서 권한을 허용해주세요."
+                    let defaultMyLocationInfo = LocationInfo(name: "내 위치", latitude: 37.6186, longitude: 126.9189, isMyLocation: true)
+                    self.myLocationWeather = WeatherInfo(
+                        location: defaultMyLocationInfo,
+                        current: nil,
+                        hourlyForecast: nil,
+                        dailyForecast: nil,
+                        errorMessage: self.errorMessage
+                    )
+                @unknown default:
+                    self.errorMessage = WeatherError.unknown.localizedDescription
+                    let defaultMyLocationInfo = LocationInfo(name: "내 위치", latitude: 37.6186, longitude: 126.9189, isMyLocation: true)
+                    self.myLocationWeather = WeatherInfo(
+                        location: defaultMyLocationInfo,
+                        current: nil,
+                        hourlyForecast: nil,
+                        dailyForecast: nil,
+                        errorMessage: self.errorMessage
+                    )
                 }
+
+                // 주요 대도시 날씨는 위치 권한과 별개로 진행
+                await fetchMajorCitiesWeather()
+
+                self.isLoading = false // 모든 작업 완료 후 로딩 상태 해제
+            } catch {
+                // 권한 요청 자체에서 발생한 오류
+                if let weatherError = error as? WeatherError {
+                    self.errorMessage = weatherError.localizedDescription
+                } else {
+                    self.errorMessage = WeatherError.unknown.localizedDescription
+                }
+                self.isLoading = false
             }
         }
     }
@@ -128,14 +121,7 @@ class WeatherViewModel: ObservableObject {
             }
         } catch {
             await MainActor.run {
-                let weatherError: WeatherError
-                if let err = error as? WeatherError {
-                    weatherError = err
-                } else {
-                    weatherError = .unknown
-                }
-                let errorWeatherInfo = WeatherInfo(location: locationInfo, errorMessage: weatherError.localizedDescription)
-
+                let errorWeatherInfo = WeatherInfo(location: locationInfo, errorMessage: error.localizedDescription)
                 if locationInfo.isMyLocation {
                     self.myLocationWeather = errorWeatherInfo
                 } else {
@@ -143,20 +129,29 @@ class WeatherViewModel: ObservableObject {
                         self.majorCityWeathers[index] = errorWeatherInfo
                     }
                 }
-                self.errorMessage = weatherError.localizedDescription // 전역 에러 메시지로도 설정
             }
         }
     }
 
     private func fetchMajorCitiesWeather() async {
         await withTaskGroup(of: Void.self) { group in
-            for index in self.predefinedCities.indices {
-                let cityInfo = self.predefinedCities[index]
-                let location = CLLocation(latitude: cityInfo.latitude, longitude: cityInfo.longitude)
+            for city in predefinedCities {
                 group.addTask {
-                    await self.fetchWeather(for: location, locationInfo: cityInfo)
+                    let location = CLLocation(latitude: city.latitude, longitude: city.longitude)
+                    await self.fetchWeather(for: location, locationInfo: city)
                 }
             }
         }
     }
+
+    // 주요 대도시 리스트는 그대로 유지
+    private let predefinedCities: [LocationInfo] = [
+        LocationInfo(name: "서울", latitude: 37.5665, longitude: 126.9780),
+        LocationInfo(name: "도쿄", latitude: 35.6895, longitude: 139.6917),
+        LocationInfo(name: "뉴욕", latitude: 40.7128, longitude: -74.0060),
+        LocationInfo(name: "런던", latitude: 51.5072, longitude: -0.1276),
+        LocationInfo(name: "파리", latitude: 48.8566, longitude: 2.3522),
+        LocationInfo(name: "베이징", latitude: 39.9042, longitude: 116.4074),
+        LocationInfo(name: "시드니", latitude: -33.8688, longitude: 151.2093)
+    ]
 }

@@ -9,7 +9,7 @@ import SwiftUI
 import WeatherKit // WeatherCondition, symbolName 등을 사용하기 위해 임포트
 
 struct WeatherView: View {
-    @ObservedObject var viewModel: WeatherViewModel // @StateObject 대신 @ObservedObject 사용, 의존성 주입
+    @State var viewModel: WeatherViewModel
 
     var body: some View {
         NavigationView {
@@ -46,8 +46,7 @@ struct WeatherView: View {
                 }
                 .navigationTitle("날씨")
                 .onAppear {
-                    // 뷰가 나타날 때 모든 날씨 데이터 로드를 시작
-                    viewModel.loadAllWeatherData()		
+                    viewModel.fetchWeatherForAllLocations()
                 }
             }
         }
