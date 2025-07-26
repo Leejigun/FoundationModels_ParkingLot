@@ -7,7 +7,8 @@
 
 import Foundation
 import CoreLocation
+import MapKit
 
 protocol ParkingRepository {
-    func searchParking(query: String, near location: CLLocation) async throws -> [ParkingInfo]
+    func searchParking(query: String, near location: CLLocation) async throws -> [MKMapItem]
 }

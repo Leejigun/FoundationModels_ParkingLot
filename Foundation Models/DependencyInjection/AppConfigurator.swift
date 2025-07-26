@@ -25,15 +25,16 @@ class AppConfigurator {
     static func configureParkingView() -> ParkingView {
         // Data 계층 구현체 생성
         let parkingRepository: ParkingRepository = MapKitParkingRepository()
-        let locationService: LocationService = DefaultLocationService()  // 재사용
-
+        let locationService: LocationService = DefaultLocationService()
+        
         // Domain 계층 Use Case 생성 (Repository에 의존성 주입)
+        let generateParkingTagsUseCase: GenerateParkingTagsUseCase = DefaultGenerateParkingTagsUseCase()
         let fetchParkingUseCase: FetchParkingUseCase =
-            DefaultFetchParkingUseCase(parkingRepository: parkingRepository)
+        DefaultFetchParkingUseCase(parkingRepository: parkingRepository)
 
         // Presentation 계층 ViewModel 생성 (Use Case 및 LocationService에 의존성 주입)
         let viewModel = ParkingViewModel(
-            fetchParkingUseCase: fetchParkingUseCase,
+            fetchParkingUseCase: fetchParkingUseCase, generateParkingTagsUseCase: generateParkingTagsUseCase,
             locationService: locationService
         )
 
