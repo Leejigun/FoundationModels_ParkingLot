@@ -31,17 +31,23 @@ struct Foundation_ModelsApp: App {
 
     var body: some Scene {
         WindowGroup {
-            TabView {
-                AppConfigurator.configureParkingView()
-                    .tabItem {
-                        Label("주차장", systemImage: "car.fill")
-                    }
-                
-                AppConfigurator.configureWeatherView()
-                    .tabItem {
-                        Label("날씨", systemImage: "cloud.sun.fill")
-                    }
-            }
+
+            AppConfigurator.configureParkingView()
+                .tabItem {
+                    Label("주차장", systemImage: "car.fill")
+                }
+
+            //            TabView {
+            //                AppConfigurator.configureParkingView()
+            //                    .tabItem {
+            //                        Label("주차장", systemImage: "car.fill")
+            //                    }
+            //
+            //                AppConfigurator.configureWeatherView()
+            //                    .tabItem {
+            //                        Label("날씨", systemImage: "cloud.sun.fill")
+            //                    }
+            //            }
         }
         .modelContainer(sharedModelContainer)
     }

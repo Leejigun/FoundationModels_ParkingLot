@@ -33,7 +33,6 @@ class DefaultFetchParkingUseCase: FetchParkingUseCase {
                 distanceInMeters: Int(mapItem.location.distance(from: location)),
                 mapURL: mapItem.url,
                 phoneNumber: mapItem.phoneNumber,
-                rating: nil, // MapKit의 MKMapItem은 직접적인 평점 정보를 제공하지 않음
                 openingHours: ["영업 시간 정보는 MapKit에서 직접 제공되지 않습니다. 상세 정보는 웹사이트를 확인해주세요."]
             )
             parkingInfos.append(parkingInfo)

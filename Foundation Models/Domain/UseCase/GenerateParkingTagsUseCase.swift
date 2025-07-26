@@ -26,12 +26,6 @@ actor DefaultGenerateParkingTagsUseCase: GenerateParkingTagsUseCase {
 
     var session = LanguageModelSession(instructions: "MKMapItem 정보로 주차장 태그를 생성")
 
-    @Generable(description: "주차장 특성 태그")
-    public struct Tags {
-        @Guide(description: "MKMapItem 기반으로 주차장의 특징을 태그로 생성")
-        public let tags: [String]
-    }
-
     func execute(mapItem: MKMapItem) async throws -> [String] {
         while session.isResponding {
             try await Task.sleep(nanoseconds: 100_000_000)  // 대기 시간 100ms로 늘려 안정성 강화

@@ -17,9 +17,7 @@ struct ParkingInfo: Identifiable {
     let distanceInMeters: Int?
     let mapURL: URL?
     let phoneNumber: String?
-    let rating: String? // 평점
     let openingHours: [String]? // 영업 시간
-    var errorMessage: String?
 }
 
 // 에러 핸들링을 위한 Enum (WeatherKit 예시에서 사용한 WeatherError를 ParkingError로 확장 또는 분리)
