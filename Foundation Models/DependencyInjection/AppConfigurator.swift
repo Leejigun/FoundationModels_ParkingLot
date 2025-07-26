@@ -28,13 +28,12 @@ class AppConfigurator {
         let locationService: LocationService = DefaultLocationService()
         
         // Domain 계층 Use Case 생성 (Repository에 의존성 주입)
-        let generateParkingTagsUseCase: GenerateParkingTagsUseCase = DefaultGenerateParkingTagsUseCase()
         let fetchParkingUseCase: FetchParkingUseCase =
         DefaultFetchParkingUseCase(parkingRepository: parkingRepository)
 
         // Presentation 계층 ViewModel 생성 (Use Case 및 LocationService에 의존성 주입)
         let viewModel = ParkingViewModel(
-            fetchParkingUseCase: fetchParkingUseCase, generateParkingTagsUseCase: generateParkingTagsUseCase,
+            fetchParkingUseCase: fetchParkingUseCase,
             locationService: locationService
         )
 

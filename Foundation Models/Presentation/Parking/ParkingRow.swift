@@ -78,6 +78,10 @@ struct ParkingRow: View {
         }
         .padding(.vertical, 5)
         .task {
+            guard tags.isEmpty else {
+                isLoadingTags = false
+                return
+            }
             isLoadingTags = true
             self.tags = await viewModel?.getTagByParkingInfo(parking) ?? []
             isLoadingTags = false

@@ -24,12 +24,10 @@ class ParkingViewModel {
     var currentVisibleMapRect: MKMapRect = MKMapRect.world
 
     private let fetchParkingUseCase: FetchParkingUseCase
-    private let generateParkingTagsUseCase: GenerateParkingTagsUseCase
     private let locationService: LocationService
 
-    init(fetchParkingUseCase: FetchParkingUseCase, generateParkingTagsUseCase: GenerateParkingTagsUseCase, locationService: LocationService) {
+    init(fetchParkingUseCase: FetchParkingUseCase, locationService: LocationService) {
         self.fetchParkingUseCase = fetchParkingUseCase
-        self.generateParkingTagsUseCase = generateParkingTagsUseCase
         self.locationService = locationService
         self.mapRegion = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 37.6186, longitude: 126.9189),
                                             span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02))
@@ -177,6 +175,7 @@ class ParkingViewModel {
     
     // MARK: Tag 조회
     func getTagByParkingInfo(_ parkingInfo: ParkingInfo) async -> [String] {
-        return (try? await generateParkingTagsUseCase.execute(parkingInfo: parkingInfo)) ?? []
+        let useCase = DefaultGenerateParkingTagsUseCase()
+        return (try? await useCase.execute(parkingInfo: parkingInfo)) ?? []
     }
 }
