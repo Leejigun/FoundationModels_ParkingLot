@@ -29,10 +29,6 @@ struct ParkingRow: View {
                     Text("거리: \(distance)")
                         .font(.caption)
                 }
-                if let rating = parking.rating {
-                    Text("평점: \(rating)점")
-                        .font(.caption)
-                }
             }
             
             // MARK: - 태그 로딩 상태 및 태그 표시
@@ -57,23 +53,6 @@ struct ParkingRow: View {
                 Text("전화: \(phone)")
                     .font(.caption)
                 // Link("전화 걸기", destination: URL(string: "tel://\(phone)")!) // 실제 전화 걸기 기능 추가 가능
-            }
-            if let hours = parking.openingHours, !hours.isEmpty {
-                ForEach(hours, id: \.self) { hour in
-                    Text(hour)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            if let mapURL = parking.mapURL {
-                Link("지도에서 보기", destination: mapURL)
-                    .font(.caption)
-                    .foregroundColor(.blue)
-            }
-            if let errorMsg = parking.errorMessage {
-                Text(errorMsg)
-                    .font(.caption)
-                    .foregroundColor(.red)
             }
         }
         .padding(.vertical, 5)

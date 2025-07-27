@@ -7,17 +7,18 @@
 
 import Foundation
 import CoreLocation
+import FoundationModels
 
+@Generable
 struct ParkingInfo: Identifiable {
     let id = UUID()
     let name: String
     let address: String?
-    let coordinate: CLLocationCoordinate2D
+    let latitude: Double
+    let longitude: Double
     let distance: String? // 예: "290m"
     let distanceInMeters: Int?
-    let mapURL: URL?
     let phoneNumber: String?
-    let openingHours: [String]? // 영업 시간
 }
 
 // 에러 핸들링을 위한 Enum (WeatherKit 예시에서 사용한 WeatherError를 ParkingError로 확장 또는 분리)

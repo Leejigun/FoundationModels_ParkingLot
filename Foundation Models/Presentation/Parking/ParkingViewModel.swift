@@ -23,11 +23,14 @@ class ParkingViewModel {
 
     var currentVisibleMapRect: MKMapRect = MKMapRect.world
 
-    private let fetchParkingUseCase: FetchParkingUseCase
+    private let fmFetchParkingUseCase: FetchParkingUseCase
+    private let detchParkingUseCase: FetchParkingUseCase
+    
     private let locationService: LocationService
 
-    init(fetchParkingUseCase: FetchParkingUseCase, locationService: LocationService) {
-        self.fetchParkingUseCase = fetchParkingUseCase
+    init(fmFetchParkingUseCase: FetchParkingUseCase, detchParkingUseCase: FetchParkingUseCase, locationService: LocationService) {
+        self.fmFetchParkingUseCase = fmFetchParkingUseCase
+        self.detchParkingUseCase = detchParkingUseCase
         self.locationService = locationService
         self.mapRegion = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 37.6186, longitude: 126.9189),
                                             span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02))
@@ -139,12 +142,26 @@ class ParkingViewModel {
             self.visibleParkingPlaces = []
         }
         do {
-            let results = try await fetchParkingUseCase.execute(query: query, near: location)
+            let results = try await fmFetchParkingUseCase.execute(query: query, near: location)
+            let results2 = try await detchParkingUseCase.execute(query: query, near: location)
+            
+            print("""
+                
+                검색 결과 비교
+                query: \(query)
+                latitude: \(location.coordinate.latitude)
+                latitude: \(location.coordinate.latitude)
+                
+                AI: \(results.count)
+                programming: \(results2.count)
+                
+                """)
+            
             await MainActor.run {
                 self.parkingPlaces = results
                 self.parkingAnnotations = results.map { parking in
                     let annotation = MKPointAnnotation()
-                    annotation.coordinate = parking.coordinate
+                    annotation.coordinate = .init(latitude: parking.latitude, longitude: parking.longitude)
                     annotation.title = parking.name
                     annotation.subtitle = parking.address
                     return annotation
@@ -168,7 +185,7 @@ class ParkingViewModel {
 
     private func filterVisibleParkingPlaces() {
         self.visibleParkingPlaces = parkingPlaces.filter { parking in
-            let mapPoint = MKMapPoint(parking.coordinate)
+            let mapPoint = MKMapPoint(CLLocationCoordinate2D(latitude: parking.latitude, longitude: parking.longitude))
             return self.currentVisibleMapRect.contains(mapPoint)
         }
     }

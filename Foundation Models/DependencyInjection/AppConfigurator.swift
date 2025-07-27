@@ -30,10 +30,12 @@ class AppConfigurator {
         // Domain 계층 Use Case 생성 (Repository에 의존성 주입)
         let fetchParkingUseCase: FetchParkingUseCase =
         DefaultFetchParkingUseCase(parkingRepository: parkingRepository)
+        let fmFetchParkingUseCase: FetchParkingUseCase = FMFetchParkingUseCase(parkingRepository: parkingRepository)
 
         // Presentation 계층 ViewModel 생성 (Use Case 및 LocationService에 의존성 주입)
         let viewModel = ParkingViewModel(
-            fetchParkingUseCase: fetchParkingUseCase,
+            fmFetchParkingUseCase: fmFetchParkingUseCase,
+            detchParkingUseCase: fetchParkingUseCase,
             locationService: locationService
         )
 
