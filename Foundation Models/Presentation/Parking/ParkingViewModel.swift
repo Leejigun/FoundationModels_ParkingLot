@@ -174,8 +174,8 @@ class ParkingViewModel {
     }
     
     // MARK: Tag 조회
-    func getTagByParkingInfo(_ parkingInfo: ParkingInfo) async -> [String] {
+    func getTagByParkingInfo(_ parkingInfo: ParkingInfo) async -> ParkingSummary? {
         let useCase = DefaultGenerateParkingTagsUseCase()
-        return (try? await useCase.execute(parkingInfo: parkingInfo)) ?? []
+        return try? await useCase.execute(parkingInfo: parkingInfo)
     }
 }
